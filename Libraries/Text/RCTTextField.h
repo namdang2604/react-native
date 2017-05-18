@@ -12,6 +12,7 @@
 #import <React/RCTComponent.h>
 
 @class RCTEventDispatcher;
+@class RCTAccessibilityManager;
 
 @interface RCTTextField : UITextField
 
@@ -22,9 +23,16 @@
 @property (nonatomic, strong) UIColor *placeholderTextColor;
 @property (nonatomic, assign) NSInteger mostRecentEventCount;
 @property (nonatomic, strong) NSNumber *maxLength;
+@property (nonatomic, assign) CGFloat fontSizeMultiplier;
+@property (nonatomic, assign) BOOL allowFontScaling;
+@property (nonatomic, copy) NSString *fontFamily;
+@property (nonatomic, strong) NSNumber *fontSize;
+@property (nonatomic, copy) NSString *fontWeight;
+@property (nonatomic, copy) NSString *fontStyle;
 
 @property (nonatomic, copy) RCTDirectEventBlock onSelectionChange;
 
-- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher withAccessibilityManager:(RCTAccessibilityManager *)accessibilityManager NS_DESIGNATED_INITIALIZER;
+- (void)updateFont;
 
 @end

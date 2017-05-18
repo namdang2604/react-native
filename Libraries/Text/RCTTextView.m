@@ -9,8 +9,10 @@
 
 #import "RCTTextView.h"
 
+#import <React/RCTAccessibilityManager.h>
 #import <React/RCTConvert.h>
 #import <React/RCTEventDispatcher.h>
+#import <React/RCTFont.h>
 #import <React/RCTUIManager.h>
 #import <React/RCTUtils.h>
 #import <React/UIView+React.h>
@@ -24,6 +26,7 @@
 {
   RCTBridge *_bridge;
   RCTEventDispatcher *_eventDispatcher;
+  RCTAccessibilityManager *_accessibilityManager;
 
   RCTUITextView *_textView;
   RCTText *_richTextView;
@@ -49,6 +52,7 @@
     _contentInset = UIEdgeInsetsZero;
     _bridge = bridge;
     _eventDispatcher = bridge.eventDispatcher;
+    _accessibilityManager = bridge.accessibilityManager;
     _blurOnSubmit = NO;
 
     _textView = [[RCTUITextView alloc] initWithFrame:self.bounds];
@@ -62,6 +66,13 @@
 #endif
     _textView.scrollEnabled = YES;
     _textView.delegate = self;
+    _fontSizeMultiplier = _accessibilityManager.multiplier;
+    [self updateFont];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(contentSizeMultiplierDidChange)
+                                                 name:RCTAccessibilityManagerDidUpdateMultiplierNotification
+                                               object:_accessibilityManager];
 
     [self addSubview:_textView];
   }
@@ -97,6 +108,11 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
     [self performTextUpdate];
   }
+}
+
+- (void)dealloc
+{
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)removeReactSubview:(UIView *)subview
@@ -195,7 +211,51 @@ static NSAttributedString *removeReactTagFromString(NSAttributedString *string)
   _blockTextShouldChange = NO;
 }
 
+- (void)contentSizeMultiplierDidChange
+{
+  self.fontSizeMultiplier = _accessibilityManager.multiplier;
+}
+
+- (void)updateFont
+{
+  CGFloat scaleMultiplier = _allowFontScaling ? _fontSizeMultiplier : 1.0;
+
+  self.font = [RCTFont updateFont:nil
+                          withFamily:self.fontFamily
+                                size:self.fontSize
+                              weight:self.fontWeight
+                               style:self.fontStyle
+                             variant:nil
+                     scaleMultiplier:scaleMultiplier];
+  
+  // Because the font changed, the TextInput may take up more space now so we call
+  // invalidateContentSize. However, if there's currently no text to render, then
+  // there's no need to call invalidateContentSize.
+  if ([self text].length != 0) {
+    [self invalidateContentSize];
+  }
+}
+
 #pragma mark - Properties
+
+- (void)setFontSizeMultiplier:(CGFloat)fontSizeMultiplier
+{
+  _fontSizeMultiplier = fontSizeMultiplier;
+  
+  if (_fontSizeMultiplier == 0) {
+    RCTLogError(@"fontSizeMultiplier value must be > zero.");
+    _fontSizeMultiplier = 1.0;
+  }
+
+  [self updateFont];
+}
+
+- (void)setAllowFontScaling:(BOOL)allowFontScaling
+{
+  _allowFontScaling = allowFontScaling;
+  [self updateFont];
+
+}
 
 - (UIFont *)font
 {

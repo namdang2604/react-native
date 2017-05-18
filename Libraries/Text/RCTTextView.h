@@ -13,6 +13,7 @@
 #import <React/UIView+React.h>
 
 @class RCTBridge;
+@class RCTAccessibilityManager;
 
 @interface RCTTextView : RCTView <UITextViewDelegate>
 
@@ -27,6 +28,12 @@
 @property (nonatomic, strong) UIColor *placeholderTextColor;
 @property (nonatomic, copy) NSString *placeholder;
 @property (nonatomic, strong) UIFont *font;
+@property (nonatomic, assign) CGFloat fontSizeMultiplier;
+@property (nonatomic, assign) BOOL allowFontScaling;
+@property (nonatomic, copy) NSString *fontFamily;
+@property (nonatomic, strong) NSNumber *fontSize;
+@property (nonatomic, copy) NSString *fontWeight;
+@property (nonatomic, copy) NSString *fontStyle;
 @property (nonatomic, assign) NSInteger mostRecentEventCount;
 @property (nonatomic, strong) NSNumber *maxLength;
 @property (nonatomic, assign, readonly) CGSize contentSize;
@@ -40,5 +47,6 @@
 - (instancetype)initWithBridge:(RCTBridge *)bridge NS_DESIGNATED_INITIALIZER;
 
 - (void)performTextUpdate;
+- (void)updateFont;
 
 @end

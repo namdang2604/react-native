@@ -9,8 +9,10 @@
 
 #import "RCTTextField.h"
 
+#import <React/RCTAccessibilityManager.h>
 #import <React/RCTConvert.h>
 #import <React/RCTEventDispatcher.h>
+#import <React/RCTFont.h>
 #import <React/RCTUtils.h>
 #import <React/UIView+React.h>
 
@@ -48,6 +50,7 @@
 @implementation RCTTextField
 {
   RCTEventDispatcher *_eventDispatcher;
+  RCTAccessibilityManager *_accessibilityManager;
   NSInteger _nativeEventCount;
   BOOL _submitted;
   UITextRange *_previousSelectionRange;
@@ -56,16 +59,23 @@
   RCTTextFieldDelegateProxy *_delegateProxy;
 }
 
-- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher
+- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher withAccessibilityManager:(RCTAccessibilityManager *)accessibilityManager
 {
   if ((self = [super initWithFrame:CGRectZero])) {
     RCTAssert(eventDispatcher, @"eventDispatcher is a required parameter");
     _eventDispatcher = eventDispatcher;
+    _accessibilityManager = accessibilityManager;
+    _fontSizeMultiplier = _accessibilityManager.multiplier;
+    [self updateFont];
     [self addTarget:self action:@selector(textFieldDidChange) forControlEvents:UIControlEventEditingChanged];
     [self addTarget:self action:@selector(textFieldBeginEditing) forControlEvents:UIControlEventEditingDidBegin];
     [self addTarget:self action:@selector(textFieldEndEditing) forControlEvents:UIControlEventEditingDidEnd];
     [self addTarget:self action:@selector(textFieldSubmitEditing) forControlEvents:UIControlEventEditingDidEndOnExit];
     [self addObserver:self forKeyPath:@"selectedTextRange" options:0 context:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(contentSizeMultiplierDidChange)
+                                                 name:RCTAccessibilityManagerDidUpdateMultiplierNotification
+                                               object:_accessibilityManager];
     _blurOnSubmit = YES;
 
     // We cannot use `self.delegate = self;` here because `UITextField` implements some of these delegate methods itself,
@@ -79,6 +89,7 @@
 - (void)dealloc
 {
   [self removeObserver:self forKeyPath:@"selectedTextRange"];
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
@@ -99,6 +110,43 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 {
   _textWasPasted = YES;
   [super paste:sender];
+}
+
+- (void)contentSizeMultiplierDidChange
+{
+  self.fontSizeMultiplier = _accessibilityManager.multiplier;
+}
+
+- (void)updateFont
+{
+  CGFloat scaleMultiplier = _allowFontScaling ? _fontSizeMultiplier : 1.0;
+  
+  self.font = [RCTFont updateFont:nil
+                          withFamily:self.fontFamily
+                                size:self.fontSize
+                              weight:self.fontWeight
+                               style:self.fontStyle
+                             variant:nil
+                     scaleMultiplier:scaleMultiplier];
+}
+
+- (void)setAllowFontScaling:(BOOL)allowFontScaling
+{
+  _allowFontScaling = allowFontScaling;
+  [self updateFont];
+
+}
+
+- (void)setFontSizeMultiplier:(CGFloat)fontSizeMultiplier
+{
+   _fontSizeMultiplier = fontSizeMultiplier;
+  
+  if (_fontSizeMultiplier == 0) {
+    RCTLogError(@"fontSizeMultiplier value must be > zero.");
+    _fontSizeMultiplier = 1.0;
+  }
+
+  [self updateFont];
 }
 
 - (void)setSelection:(RCTTextSelection *)selection

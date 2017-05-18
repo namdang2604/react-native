@@ -9,6 +9,7 @@
 
 #import "RCTTextViewManager.h"
 
+#import <React/RCTAccessibilityManager.h>
 #import <React/RCTBridge.h>
 #import <React/RCTConvert.h>
 #import <React/RCTFont.h>
@@ -33,6 +34,7 @@ RCT_EXPORT_MODULE()
   return [[RCTTextView alloc] initWithBridge:self.bridge];
 }
 
+RCT_EXPORT_VIEW_PROPERTY(allowFontScaling, BOOL)
 RCT_REMAP_VIEW_PROPERTY(autoCapitalize, textView.autocapitalizationType, UITextAutocapitalizationType)
 RCT_REMAP_VIEW_PROPERTY(autoCorrect, autocorrectionType, UITextAutocorrectionType)
 RCT_REMAP_VIEW_PROPERTY(spellCheck, spellCheckingType, UITextSpellCheckingType)
@@ -60,19 +62,23 @@ RCT_EXPORT_VIEW_PROPERTY(selection, RCTTextSelection)
 RCT_EXPORT_VIEW_PROPERTY(text, NSString)
 RCT_CUSTOM_VIEW_PROPERTY(fontSize, NSNumber, RCTTextView)
 {
-  view.font = [RCTFont updateFont:view.font withSize:json ?: @(defaultView.font.pointSize)];
+  view.fontSize = json ?: @(defaultView.font.pointSize);
+  [view updateFont];
 }
 RCT_CUSTOM_VIEW_PROPERTY(fontWeight, NSString, __unused RCTTextView)
 {
-  view.font = [RCTFont updateFont:view.font withWeight:json]; // defaults to normal
+  view.fontWeight = json; //defaults to normal
+  [view updateFont]; 
 }
 RCT_CUSTOM_VIEW_PROPERTY(fontStyle, NSString, __unused RCTTextView)
 {
-  view.font = [RCTFont updateFont:view.font withStyle:json]; // defaults to normal
+  view.fontStyle = json; //defaults to normal
+  [view updateFont]; 
 }
 RCT_CUSTOM_VIEW_PROPERTY(fontFamily, NSString, RCTTextView)
 {
-  view.font = [RCTFont updateFont:view.font withFamily:json ?: defaultView.font.familyName];
+  view.fontFamily = json ?: defaultView.font.familyName;
+  [view updateFont];
 }
 RCT_EXPORT_VIEW_PROPERTY(mostRecentEventCount, NSInteger)
 
